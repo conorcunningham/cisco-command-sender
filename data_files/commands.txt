@@ -1,0 +1,5 @@
+do show ip int br
+vlan 987
+name monkey
+exit
+do show vlan
