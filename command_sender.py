@@ -1,5 +1,8 @@
 import argparse
+import sys
+import logging
 from netmiko import ConnectHandler
+from netmiko.ssh_exception import NetmikoAuthenticationException, NetmikoTimeoutException
 from pathlib import Path
 from src.cisco_switches import parse_hosts_file, parse_commands_file
 
@@ -18,6 +21,16 @@ if not args.hosts_file or not args.cmd_file:
 username = args.username if args.username else None
 password = args.password if args.password else None
 
+# Get an instance of a logger
+log_file = 'results.log'
+file_handler = logging.FileHandler(log_file)
+stream_handler = logging.StreamHandler(sys.stdout)
+file_handler.setLevel(logging.ERROR)
+stream_handler.setLevel(logging.ERROR)
+logger = logging.getLogger(__name__)
+logger.addHandler(file_handler)
+logger.addHandler(stream_handler)
+
 
 # the files
 hosts_path = Path() / args.hosts_file
@@ -28,18 +41,23 @@ try:
     with hosts_path.open() as file:
         hosts = parse_hosts_file(file, username, password)
 except (FileExistsError, FileNotFoundError):
-    print(f"Hosts file {hosts_path.name} not found or failed to open")
+    logger.error(f"Hosts file {hosts_path.name} not found or failed to open")
     exit(1)
 
 try:
     with cmd_path.open() as file:
         cmds = parse_commands_file(file)
 except (FileExistsError, FileNotFoundError):
-    print(f"Commands file {cmd_path.name} not found or failed to open")
+    logger.error(f"Commands file {cmd_path.name} not found or failed to open")
     exit(1)
 
 # loop over all hosts and execute necessary commands
 for host in hosts:
-    connection = ConnectHandler(**host)
-    output = connection.send_config_set(cmds)
-    print(output)
+    try:
+        connection = ConnectHandler(**host)
+        output = connection.send_config_set(cmds)
+    except NetmikoAuthenticationException:
+        logger.error(f"Auth error exception as {host['host']}")
+    except NetmikoTimeoutException:
+        logger.error(f"Timeout error exception {host['host']}")
+    logger.debug(f"{host['host']} configured successfully")

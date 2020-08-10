@@ -14,6 +14,8 @@ As an example
 ```bash
 $ python command_sender.py ./data_files/hosts.txt ./data_files/commands.txt
 ```
+#### Authentication
+You can specifiy username and password on the command line or you can override username and password in the code itself.
 
 ### Example Hosts File
 ```text
