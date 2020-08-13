@@ -1,5 +1,3 @@
-do show ip int br
-vlan 987
-name monkey
-exit
-do show vlan
+show monkey
+no spanning-tree loopguard default
+do show spanning-tree summary

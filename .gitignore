@@ -1,0 +1,11 @@
+/results.log
+.idea
+idea
+.env
+db.sqlite3
+pycache
+__pycache__
+.venv
+venv
+/src/__pycache__
+.pyc

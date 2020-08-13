@@ -1,10 +1,11 @@
-import argparse
 import sys
 import logging
+import argparse
+import concurrent.futures
+from pathlib import Path
 from netmiko import ConnectHandler
 from netmiko.ssh_exception import NetmikoAuthenticationException, NetmikoTimeoutException
-from pathlib import Path
-from src.cisco_switches import parse_hosts_file, parse_commands_file
+from src.cisco_switches import parse_hosts_file, parse_commands_file, analyse_output_key_value
 
 # Parse the args
 parser = argparse.ArgumentParser()
@@ -25,39 +26,76 @@ password = args.password if args.password else None
 log_file = 'results.log'
 file_handler = logging.FileHandler(log_file)
 stream_handler = logging.StreamHandler(sys.stdout)
-file_handler.setLevel(logging.ERROR)
+file_handler.setLevel(logging.DEBUG)
 stream_handler.setLevel(logging.ERROR)
+# formatting for loggers
+file_handler_format = logging.Formatter('%(levelname)s - %(asctime)s - %(message)s')
+stream_handler_format = logging.Formatter('%(levelname)s - %(asctime)s - %(message)s')
+file_handler.setFormatter(file_handler_format)
+stream_handler.setFormatter(stream_handler_format)
+
 logger = logging.getLogger(__name__)
 logger.addHandler(file_handler)
 logger.addHandler(stream_handler)
+logger.setLevel(logging.DEBUG)
 
 
 # the files
 hosts_path = Path() / args.hosts_file
 cmd_path = Path() / args.cmd_file
 
-# open and read files, and handle errors if necessary
-try:
-    with hosts_path.open() as file:
-        hosts = parse_hosts_file(file, username, password)
-except (FileExistsError, FileNotFoundError):
-    logger.error(f"Hosts file {hosts_path.name} not found or failed to open")
-    exit(1)
 
-try:
-    with cmd_path.open() as file:
-        cmds = parse_commands_file(file)
-except (FileExistsError, FileNotFoundError):
-    logger.error(f"Commands file {cmd_path.name} not found or failed to open")
-    exit(1)
+def main():
+    # open and read files, and handle errors if necessary
+    try:
+        with hosts_path.open() as file:
+            hosts = parse_hosts_file(file, username, password)
+    except (FileExistsError, FileNotFoundError):
+        logger.error(f"Hosts file {hosts_path.name} not found or failed to open")
+        exit(1)
 
-# loop over all hosts and execute necessary commands
-for host in hosts:
+    try:
+        with cmd_path.open() as file:
+            cmds = parse_commands_file(file)
+    except (FileExistsError, FileNotFoundError):
+        logger.error(f"Commands file {cmd_path.name} not found or failed to open")
+        exit(1)
+
+    # Here we are using threading, as we are I/O bound.
+    # Netmiko and Paramiko are blocking, so asyncio not possible
+    # On an asyncio note, asyncssh package looks interesting
+    # loop over all hosts and execute necessary commands
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        for host in hosts:
+            executor.submit(run_ssh_connection, host, cmds)
+
+
+def run_ssh_connection(host, cmds):
+    """
+    Connect to the host and execute the list of commands
+    Log results
+    :param host: DNS or IP address of a host
+    :param cmds: A list where each element represents a command to run on the device
+    :return: None
+    """
     try:
         connection = ConnectHandler(**host)
         output = connection.send_config_set(cmds)
     except NetmikoAuthenticationException:
         logger.error(f"Auth error exception as {host['host']}")
+        return
     except NetmikoTimeoutException:
         logger.error(f"Timeout error exception {host['host']}")
-    logger.debug(f"{host['host']} configured successfully")
+        return
+
+    # determine whether the results are as expected, and log
+    if analyse_output_key_value(output, "Loopguard Default", "is disabled"):
+        logger.debug(f"{host['host']} configured successfully")
+    else:
+        logger.debug(
+            f"{host['host']} loopguard either still enabled or loopguard not observed in spanning tree output"
+        )
+
+
+if __name__ == '__main__':
+    main()

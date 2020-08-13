@@ -31,3 +31,10 @@ def parse_hosts_file(file, username, password, device_type='cisco_ios'):
 
 def parse_commands_file(file):
     return [line.strip() for line in file]
+
+
+def analyse_output_key_value(output, key, value):
+    for line in output.split("\n"):
+        if key in line:
+            return True if value in line else False
+    return False
