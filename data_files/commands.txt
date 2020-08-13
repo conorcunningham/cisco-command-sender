@@ -1,3 +1,2 @@
-show monkey
 no spanning-tree loopguard default
 do show spanning-tree summary

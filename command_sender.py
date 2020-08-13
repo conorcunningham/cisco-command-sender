@@ -6,6 +6,8 @@ from pathlib import Path
 from netmiko import ConnectHandler
 from netmiko.ssh_exception import NetmikoAuthenticationException, NetmikoTimeoutException
 from src.cisco_switches import parse_hosts_file, parse_commands_file, analyse_output_key_value
+from datetime import datetime
+startTime = datetime.now()
 
 # Parse the args
 parser = argparse.ArgumentParser()
@@ -68,6 +70,8 @@ def main():
     with concurrent.futures.ThreadPoolExecutor() as executor:
         for host in hosts:
             executor.submit(run_ssh_connection, host, cmds)
+
+    print(datetime.now() - startTime)
 
 
 def run_ssh_connection(host, cmds):
