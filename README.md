@@ -75,6 +75,9 @@ switch(config-vlan)# name monkey
 switch(config-vlan)# exit
 switch(config)# do show vlan
 ```
+## Command Checking
+The basis of the program is check the output of Cisco commands for the precense of an identifying word in a line, then determine whether or not a keyword is present in that line of text.
+As an example, let's look at the use-case where we want to determine whether loopguard is enabled or not on a cisco switch
 
 ## Logging
 

@@ -47,6 +47,13 @@ logger.setLevel(logging.DEBUG)
 hosts_path = Path() / args.hosts_file
 cmd_path = Path() / args.cmd_file
 
+# what we are checking for
+# effectively we want to confirm wether some string in present in another string
+# for example, by looking at the output of 'show spanning-tree summary'
+# we want to confirm whether 'Loopguard Default' is enabled or disabled.
+config_to_check = "Loopguard Default"
+confirmation_string = "is disabled"
+
 
 def main():
     # open and read files, and handle errors if necessary
@@ -96,7 +103,7 @@ def run_ssh_connection(host, cmds):
         return
 
     # determine whether the results are as expected, and log
-    if analyse_output_key_value(output, "Loopguard Default", "is disabled"):
+    if analyse_output_key_value(output, config_to_check, confirmation_string):
         logger.debug(f"{host['host']} configured successfully")
     else:
         logger.debug(
