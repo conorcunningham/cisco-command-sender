@@ -5,9 +5,9 @@ import concurrent.futures
 from pathlib import Path
 from netmiko import ConnectHandler
 from netmiko.ssh_exception import NetmikoAuthenticationException, NetmikoTimeoutException
-from src.cisco_switches import parse_hosts_file, parse_commands_file, analyse_output_key_value
-from datetime import datetime
-startTime = datetime.now()
+from src.cisco_switches import parse_hosts_file, parse_commands_file, validate
+# from datetime import datetime
+# startTime = datetime.now()
 
 # Parse the args
 parser = argparse.ArgumentParser()
@@ -80,7 +80,7 @@ def main():
             executor.submit(run_ssh_connection, host, cmds)
 
     # print script execution duration
-    print(datetime.now() - startTime)
+    # print(datetime.now() - startTime)
 
 
 def run_ssh_connection(host, cmds):
@@ -103,7 +103,7 @@ def run_ssh_connection(host, cmds):
         return
 
     # determine whether the results are as expected, and log
-    if analyse_output_key_value(output, config_to_check, confirmation_string):
+    if validate(output, config_to_check, confirmation_string):
         logger.debug(f"{host['host']} configured successfully")
     else:
         logger.debug(

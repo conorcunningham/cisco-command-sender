@@ -76,8 +76,82 @@ switch(config-vlan)# exit
 switch(config)# do show vlan
 ```
 ## Command Checking
-The basis of the program is check the output of Cisco commands for the precense of an identifying word in a line, then determine whether or not a keyword is present in that line of text.
-As an example, let's look at the use-case where we want to determine whether loopguard is enabled or not on a cisco switch
+The basis of the program is check the output of Cisco commands for the precense of an identifying word in a line, then determine whether or not a keyword is present in that line of text. In short, we are:
+
+* Defining a command which generates output
+* Defining a string which identifies a line(s) we are interested in
+* Defining a string which we will use to determine something about the above line.
+
+As an example, let's look at the use-case where we want to determine whether `loopguard` is enabled or not on a cisco switch.
+
+In order to check whether `loopguard` is enabled on a Cisco switch, we must execute the command
+
+`switch#show spanning-tree summary `
+
+We would get output similar to the following depending on how the switch was configured.
+
+```switch#show spanning-tree summary 
+Switch is in rapid-pvst mode
+Root bridge for: VLAN0001, VLAN0010, VLAN0020, VLAN0100, VLAN0200, VLAN0300
+  VLAN0987, VLAN0999
+EtherChannel misconfig guard is enabled
+Extended system ID           is enabled
+Portfast Default             is disabled
+PortFast BPDU Guard Default  is disabled
+Portfast BPDU Filter Default is disabled
+Loopguard Default            is disabled
+UplinkFast                   is disabled
+BackboneFast                 is disabled
+Configured Pathcost method used is short
+```
+
+Here we can see that there is a line which reads:
+
+ `Loopguard Default            is disabled`. 
+
+Using this and the logic we defined above, we can find a line with the text `Loopgaurd Default` and determine whether loopguard is running or not by searching for `is disabled`.
+
+To do this in the program, we define two variables and assign them the values in which we are interested
+
+```python
+# what we are checking for
+# effectively we want to confirm wether some string in present in another string
+# for example, by looking at the output of 'show spanning-tree summary'
+# we want to confirm whether 'Loopguard Default' is enabled or disabled.
+config_to_check = "Loopguard Default"
+confirmation_string = "is disabled"
+```
+
+These two variables are then passed into a method called `validate()` in the code:
+
+```python
+# determine whether the results are as expected, and log
+if validate(output, config_to_check, confirmation_string):
+    logger.debug(f"{host['host']} configured successfully")
+else:
+    logger.debug(
+        f"{host['host']} loopguard either still enabled or loopguard not observed in spanning tree output"
+    )
+```
+
+`validate()` simply returns the method `analyse_output_key_value(text_input, key, value)` which is where the actual work is done.
+
+```python
+def analyse_output_key_value(text_input, key, value):
+    for line in text_input.split("\n"):
+        if key in line:
+            return True if value in line else False
+    return False
+```
+
+The reason that `validate()` exists at all is to all it to be extended should it be required to perform additional validation steps
+
+```python
+def validate(output, config_to_check, confirmation_string):
+    return analyse_output_key_value(output, config_to_check, confirmation_string)
+```
+
+
 
 ## Logging
 

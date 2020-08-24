@@ -1,2 +1,0 @@
-ERROR - 2020-08-24 18:38:47,914 - Auth error exception as 192.168.2.2
-ERROR - 2020-08-24 18:38:50,270 - Timeout error exception 10.10.11.10

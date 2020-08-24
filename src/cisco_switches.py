@@ -38,3 +38,7 @@ def analyse_output_key_value(text_input, key, value):
         if key in line:
             return True if value in line else False
     return False
+
+
+def validate(output, config_to_check, confirmation_string):
+    return analyse_output_key_value(output, config_to_check, confirmation_string)
