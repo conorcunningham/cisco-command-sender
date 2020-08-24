@@ -15,6 +15,7 @@ parser.add_argument("hosts_file", help="The hosts file containing switch IP/DNS 
 parser.add_argument("cmd_file", help="Commands to be sent to the switch. One per line")
 parser.add_argument("--username", help="Username for switch login")
 parser.add_argument("--password", help="Password for switch login")
+parser.add_argument("--log-file", help="Log file")
 args = parser.parse_args()
 
 if not args.hosts_file or not args.cmd_file:
@@ -24,8 +25,8 @@ if not args.hosts_file or not args.cmd_file:
 username = args.username if args.username else None
 password = args.password if args.password else None
 
-# Get an instance of a logger
-log_file = 'results.log'
+# Build the logger
+log_file = args.log_file if args.log_file else 'results.log'
 file_handler = logging.FileHandler(log_file)
 stream_handler = logging.StreamHandler(sys.stdout)
 file_handler.setLevel(logging.DEBUG)
@@ -71,6 +72,7 @@ def main():
         for host in hosts:
             executor.submit(run_ssh_connection, host, cmds)
 
+    # print script execution duration
     print(datetime.now() - startTime)
 
 
@@ -85,6 +87,7 @@ def run_ssh_connection(host, cmds):
     try:
         connection = ConnectHandler(**host)
         output = connection.send_config_set(cmds)
+        output += connection.save_config()
     except NetmikoAuthenticationException:
         logger.error(f"Auth error exception as {host['host']}")
         return

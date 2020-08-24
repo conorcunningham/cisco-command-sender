@@ -33,8 +33,8 @@ def parse_commands_file(file):
     return [line.strip() for line in file]
 
 
-def analyse_output_key_value(output, key, value):
-    for line in output.split("\n"):
+def analyse_output_key_value(text_input, key, value):
+    for line in text_input.split("\n"):
         if key in line:
             return True if value in line else False
     return False
