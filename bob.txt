@@ -1,0 +1,4 @@
+ERROR - 2020-08-25 10:54:36,679 - Timeout error exception 10.10.11.10
+DEBUG - 2020-08-25 10:54:40,092 - 192.168.2.2 configured successfully
+ERROR - 2020-08-25 10:55:57,958 - Timeout error exception 10.10.11.10
+DEBUG - 2020-08-25 10:56:01,553 - 192.168.2.2 configured successfully

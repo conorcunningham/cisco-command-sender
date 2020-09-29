@@ -1,2 +1,1 @@
-no spanning-tree loopguard default
-do show spanning-tree summary
+show mac address-table
