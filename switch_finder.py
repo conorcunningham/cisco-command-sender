@@ -4,13 +4,21 @@ import argparse
 import concurrent.futures
 from pathlib import Path
 from collections import Counter
-from netmiko import ConnectHandler
-from netmiko.ssh_exception import NetmikoAuthenticationException, NetmikoTimeoutException
 import src.cisco_switches as sw
 from src.excel_processor import ExcelProcessor
 
 # from datetime import datetime
 # startTime = datetime.now()
+if not sys.version_info.major == 3 and sys.version_info.minor >= 7:
+    print("Python 3.7 or higher is required.")
+    exit(0)
+
+try:
+    from netmiko import ConnectHandler
+    from netmiko.ssh_exception import NetmikoAuthenticationException, NetmikoTimeoutException
+except ImportError:
+    raise ImportError('Netmiko package must be installed. `pip install netmiko`')
+
 
 # Parse the args
 parser = argparse.ArgumentParser()
