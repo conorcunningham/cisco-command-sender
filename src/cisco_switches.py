@@ -133,6 +133,3 @@ def sort_and_order_data(port_data, host_data):
     ports = OrderedDict(sorted(port_dict.items(), key=lambda t: len(t[1]), reverse=True))
 
     return ports
-
-
-

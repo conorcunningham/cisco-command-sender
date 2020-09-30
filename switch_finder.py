@@ -1,4 +1,8 @@
 import sys
+if not sys.version_info.major == 3 and sys.version_info.minor >= 7:
+    print("Python 3.7 or higher is required.")
+    exit(0)
+
 import logging
 import argparse
 import concurrent.futures
@@ -7,18 +11,14 @@ from collections import Counter
 import src.cisco_switches as sw
 from src.excel_processor import ExcelProcessor
 
-# from datetime import datetime
-# startTime = datetime.now()
-if not sys.version_info.major == 3 and sys.version_info.minor >= 7:
-    print("Python 3.7 or higher is required.")
-    exit(0)
-
 try:
     from netmiko import ConnectHandler
     from netmiko.ssh_exception import NetmikoAuthenticationException, NetmikoTimeoutException
 except ImportError:
     raise ImportError('Netmiko package must be installed. `pip install netmiko`')
 
+# from datetime import datetime
+# startTime = datetime.now()
 
 # Parse the args
 parser = argparse.ArgumentParser()
@@ -38,7 +38,7 @@ username = args.username if args.username else None
 password = args.password if args.password else None
 threshold = args.threshold if args.threshold else 1
 
-mac_command = "show mac address-table"
+mac_command = "show mac address-table vlan 200"
 arp_command = "show ip arp vlan 200"
 hostname_command = "show run | i hostname"
 
@@ -74,7 +74,7 @@ def main():
     logger.debug("Starting switch scan")
     # open and read files, and handle errors if necessary
     try:
-        excel = ExcelProcessor("data_files/Switchfinder_poc.xlsx", username, password)
+        excel = ExcelProcessor(hosts_path, username, password)
         hosts = excel.run_sheet_read()
         # with hosts_path.open() as file:
         #     hosts = sw.parse_hosts_file(file, username, password)
@@ -96,19 +96,21 @@ def main():
     # loop over all hosts and execute necessary commands
     with concurrent.futures.ThreadPoolExecutor() as executor:
         for host in hosts:
-            # run_ssh_connection(host, mac_vendors)
-            executor.submit(run_ssh_connection, host, mac_vendors)
+            run_ssh_connection(host, mac_vendors, excel)
+            # executor.submit(run_ssh_connection, host, mac_vendors, excel)
 
+    excel.write_to_file()
     # print script execution duration
     # print(datetime.now() - startTime)
 
 
-def run_ssh_connection(host, mac_vendors):
+def run_ssh_connection(host, mac_vendors, excel):
     """
     Connect to the host and execute the list of commands
     Log results
     :param host: DNS or IP address of a host
     :param mac_vendors: dict of macs and vendors
+    :param excel: the excel reader object. Used for updating status in each row
     :return: None
     """
     try:
@@ -118,9 +120,11 @@ def run_ssh_connection(host, mac_vendors):
         hostname = connection.send_command(hostname_command).split()[1]
     except NetmikoAuthenticationException:
         logger.error(f"Auth error exception as {host['host']}")
+        excel.update_process_column(host["host"], False)
         return 1
     except NetmikoTimeoutException:
         logger.error(f"Timeout error exception {host['host']}")
+        excel.update_process_column(host["host"], False)
         return 1
 
     # determine whether the results are as expected, and log
@@ -135,19 +139,23 @@ def run_ssh_connection(host, mac_vendors):
             ip_information = sw.parse_mac_and_arp_data(data)
             host_data = sw.map_hosts_to_ip(mac_addresses, ip_information, mac_vendors)
             ordered_data = sw.sort_and_order_data(ordered_ports, host_data)
-            parse_and_display_output(ordered_data, hostname)
+            parse_and_display_output(ordered_data, hostname, host)
+            excel.update_process_column(host["host"], True)
+        return True
+
+    excel.update_process_column(host["host"], False)
+    return False
 
 
-def parse_and_display_output(ordered_data, hostname):
+def parse_and_display_output(ordered_data, hostname, host):
     for port_data, value in ordered_data.items():
-        if len(value) > threshold:
-            txt = f"{hostname} Port: {port_data}"
-            print(txt)
-            logger.info(txt)
+        port_count = len(value)
+        if port_count > threshold:
+            logging_msg = f"{hostname} ({host['host']}) Port: {port_data}: {port_count} Addresses"
+            logger.info(logging_msg)
             for host_info in value:
-                txt = f"\tMAC: {host_info.mac} \tIP: {host_info.ip} \tVendor: {host_info.vendor} # "
-                print(txt)
-                logger.info(txt)
+                logging_msg = f"\tMAC: {host_info.mac} \tIP: {host_info.ip} \tVendor: {host_info.vendor} "
+                logger.info(logging_msg)
 
 
 if __name__ == '__main__':

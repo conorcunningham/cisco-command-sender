@@ -10,3 +10,6 @@ venv
 /src/__pycache__
 .pyc
 /data_files/Switchfinder_poc.xlsx
+/data_files/~$Switchfinder_poc.xlsx
+/data_files/home.xlsx
+/data_files/~$home.xlsx
