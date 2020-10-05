@@ -27,6 +27,7 @@ parser.add_argument("cmd_file", help="Commands to be sent to the switch. One per
 parser.add_argument("--username", help="Username for switch login")
 parser.add_argument("--password", help="Password for switch login")
 parser.add_argument("--threshold", help="Threshold defining how many MACs on a port make it worth investigating")
+parser.add_argument("--vlan", help="The VLAN to check")
 parser.add_argument("--log-file", help="Log file")
 args = parser.parse_args()
 
@@ -36,10 +37,11 @@ if not args.hosts_file or not args.cmd_file:
 
 username = args.username if args.username else None
 password = args.password if args.password else None
-threshold = args.threshold if args.threshold else 0
+threshold = int(args.threshold) if args.threshold else 1
+vlan = args.vlan if args.vlan else 60
 
-mac_command = "show mac address-table vlan 200"
-arp_command = "show ip arp vlan 200"
+mac_command = f"show mac address-table vlan {vlan}"
+arp_command = f"show ip arp vlan {vlan}"
 hostname_command = "show run | i hostname"
 
 # Build the logger

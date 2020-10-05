@@ -7,6 +7,8 @@ F8FFC2  Apple
 34E380  Genesis B.V
 000000	Officially Xerox
 000001	SuperLAN-2U
+bcbac2 Hangzhou Hikvision Digital Technology Co.,Ltd.
+e4e749 Hewlett Packard
 f84dfc Hangzhou Hikvision Digital Technology Co.,Ltd.
 4cbd8f Hangzhou Hikvision Digital Technology Co.,Ltd.
 b4a382 Hangzhou Hikvision Digital Technology Co.,Ltd.

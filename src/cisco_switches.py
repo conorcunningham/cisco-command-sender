@@ -75,7 +75,7 @@ def read_and_parse_mac_vendor_file(file):
     with open(file, 'r') as vendor_file:
         for line in vendor_file:
             mac, vendor = parse_mac_line_data(line.split())
-            vendor_dict[mac] = vendor
+            vendor_dict[mac.upper()] = vendor
     return vendor_dict
 
 
