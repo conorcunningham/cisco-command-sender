@@ -36,7 +36,7 @@ if not args.hosts_file or not args.cmd_file:
 
 username = args.username if args.username else None
 password = args.password if args.password else None
-threshold = args.threshold if args.threshold else 1
+threshold = args.threshold if args.threshold else 0
 
 mac_command = "show mac address-table vlan 200"
 arp_command = "show ip arp vlan 200"
@@ -74,7 +74,7 @@ def main():
     logger.debug("Starting switch scan")
     # open and read files, and handle errors if necessary
     try:
-        excel = ExcelProcessor(hosts_path, username, password)
+        excel = ExcelProcessor(hosts_path, username, password, ignore_status=True)
         hosts = excel.run_sheet_read()
         # with hosts_path.open() as file:
         #     hosts = sw.parse_hosts_file(file, username, password)
@@ -139,7 +139,7 @@ def run_ssh_connection(host, mac_vendors, excel):
             ip_information = sw.parse_mac_and_arp_data(data)
             host_data = sw.map_hosts_to_ip(mac_addresses, ip_information, mac_vendors)
             ordered_data = sw.sort_and_order_data(ordered_ports, host_data)
-            parse_and_display_output(ordered_data, hostname, host)
+            parse_and_display_output(ordered_data, hostname, host, excel)
             excel.update_process_column(host["host"], True)
         return True
 
@@ -147,15 +147,24 @@ def run_ssh_connection(host, mac_vendors, excel):
     return False
 
 
-def parse_and_display_output(ordered_data, hostname, host):
+def parse_and_display_output(ordered_data, hostname, host, excel):
+    excel_port_record = []
     for port_data, value in ordered_data.items():
         port_count = len(value)
+
         if port_count > threshold:
-            logging_msg = f"{hostname} ({host['host']}) Port: {port_data}: {port_count} Addresses"
+            ip = host["host"]
+            port_count_info = f"{port_data}: {port_count}"
+            excel_port_record.append(port_count_info)
+            logging_msg = f"{hostname} ({ip}) Port: {port_count_info} Addresses"
             logger.info(logging_msg)
+
             for host_info in value:
                 logging_msg = f"\tMAC: {host_info.mac} \tIP: {host_info.ip} \tVendor: {host_info.vendor} "
                 logger.info(logging_msg)
+
+            # write host specific port info to excel
+            excel.update_ports_column(ip, excel_port_record)
 
 
 if __name__ == '__main__':
