@@ -50,11 +50,6 @@ class ExcelProcessor:
         status = "success" if result else "failed"
         row = self.data.loc[self.data["ip"] == key, "status"] = status
         self.write_to_file()
-        # row = .loc[row_indexer,col_indexer] = value instead
-        # print(row)
-        # print(row["ip"])
-        # row["status"] = status
-        # print(row["status"])
         return row
 
     def update_sheet(self, key, value, column):
@@ -65,9 +60,6 @@ class ExcelProcessor:
     def update_ports_column(self, key, port_info):
         ports = " ".join(port_info)
         self.update_sheet(key, ports, "ports")
-        # row = self.data.loc[self.data["ip"] == key, "ports"] = port_info
-        # self.write_to_file()
-        # return row
 
     def write_to_file(self, index=False):
         self.data.to_excel(self.spreadsheet, index=index)

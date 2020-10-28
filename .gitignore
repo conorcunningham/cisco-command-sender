@@ -14,3 +14,7 @@ venv
 /data_files/home.xlsx
 /data_files/~$home.xlsx
 results.log
+/data_files/Switchfinder_poc_2.xlsx
+/data_files/~$Switchfinder_poc_2.xlsx
+*.xsls
+/data_files/2ndscan.xlsx

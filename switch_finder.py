@@ -17,8 +17,8 @@ try:
 except ImportError:
     raise ImportError('Netmiko package must be installed. `pip install netmiko`')
 
-# from datetime import datetime
-# startTime = datetime.now()
+from datetime import datetime
+startTime = datetime.now().strftime('%a %b %d %H:%M:%S %Y')
 
 # Parse the args
 parser = argparse.ArgumentParser()
@@ -73,7 +73,7 @@ vendor_mac = Path() / data_files_dir / vendor_mac_file
 
 
 def main():
-    logger.debug("Starting switch scan")
+    logger.debug(f"Starting switch scan at {startTime}")
     # open and read files, and handle errors if necessary
     try:
         excel = ExcelProcessor(hosts_path, username, password, ignore_status=True)
@@ -98,8 +98,8 @@ def main():
     # loop over all hosts and execute necessary commands
     with concurrent.futures.ThreadPoolExecutor() as executor:
         for host in hosts:
-            run_ssh_connection(host, mac_vendors, excel)
-            # executor.submit(run_ssh_connection, host, mac_vendors, excel)
+            # run_ssh_connection(host, mac_vendors, excel)
+            executor.submit(run_ssh_connection, host, mac_vendors, excel)
 
     excel.write_to_file()
     # print script execution duration
