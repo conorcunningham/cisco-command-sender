@@ -5,7 +5,9 @@ import concurrent.futures
 from pathlib import Path
 from netmiko import ConnectHandler
 from netmiko.ssh_exception import NetmikoAuthenticationException, NetmikoTimeoutException
-from src.cisco_switches import parse_hosts_file, parse_commands_file, validate
+from src.cisco_switches import parse_commands_file, check_string_not_present
+from src.excel_processor import ExcelProcessor
+
 # from datetime import datetime
 # startTime = datetime.now()
 
@@ -53,16 +55,25 @@ cmd_path = Path() / args.cmd_file
 # we want to confirm whether 'Loopguard Default' is enabled or disabled.
 config_to_check = "Loopguard Default"
 confirmation_string = "is disabled"
+check_does_not_contain = "Loop guard"
 
 
 def main():
     # open and read files, and handle errors if necessary
     try:
-        with hosts_path.open() as file:
-            hosts = parse_hosts_file(file, username, password)
+        excel = ExcelProcessor(hosts_path, "test_sheet", username, password, ignore_status=True)
+        hosts = excel.run_sheet_read()
     except (FileExistsError, FileNotFoundError):
         logger.error(f"Hosts file {hosts_path.name} not found or failed to open")
-        exit(1)
+        return
+
+    # this is for reading from a text file containing hosts
+    # try:
+    #     with hosts_path.open() as file:
+    #         hosts = parse_hosts_file(file, username, password)
+    # except (FileExistsError, FileNotFoundError):
+    #     logger.error(f"Hosts file {hosts_path.name} not found or failed to open")
+    #     exit(1)
 
     try:
         with cmd_path.open() as file:
@@ -77,38 +88,54 @@ def main():
     # loop over all hosts and execute necessary commands
     with concurrent.futures.ThreadPoolExecutor() as executor:
         for host in hosts:
-            executor.submit(run_ssh_connection, host, cmds)
+            run_ssh_connection(host, cmds, excel)
+            # executor.submit(run_ssh_connection, host, cmds)
+
+    # save excel file to disk
+    excel.append_df_to_excel(truncate_sheet=True, index=False, startrow=0)
 
     # print script execution duration
     # print(datetime.now() - startTime)
 
 
-def run_ssh_connection(host, cmds):
+def run_ssh_connection(host, cmds, excel: ExcelProcessor):
     """
     Connect to the host and execute the list of commands
     Log results
     :param host: DNS or IP address of a host
     :param cmds: A list where each element represents a command to run on the device
+    :param excel: the instance of the excel reader parsing the excel hosts file
     :return: None
     """
     try:
         connection = ConnectHandler(**host)
         output = connection.send_config_set(cmds)
         output += connection.save_config()
+
+        # check output record result
+        if check_string_not_present(output, check_does_not_contain):
+            excel.update_process_column(host["host"], True)
+        else:
+            excel.update_process_column(host["host"], False)
+
     except NetmikoAuthenticationException:
         logger.error(f"Auth error exception as {host['host']}")
-        return
+        excel.update_process_column(host["host"], False)
+        return None
     except NetmikoTimeoutException:
         logger.error(f"Timeout error exception {host['host']}")
-        return
+        excel.update_process_column(host["host"], False)
+        return None
 
-    # determine whether the results are as expected, and log
-    if validate(output, config_to_check, confirmation_string):
-        logger.debug(f"{host['host']} configured successfully")
-    else:
-        logger.debug(
-            f"{host['host']} loopguard either still enabled or loopguard not observed in spanning tree output"
-        )
+    return output
+
+    # # determine whether the results are as expected, and log
+    # if validate(output, config_to_check, confirmation_string):
+    #     logger.debug(f"{host['host']} configured successfully")
+    # else:
+    #     logger.debug(
+    #         f"{host['host']} loopguard either still enabled or loopguard not observed in spanning tree output"
+    #     )
 
 
 if __name__ == '__main__':

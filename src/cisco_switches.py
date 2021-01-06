@@ -40,6 +40,13 @@ def analyse_output_key_value(text_input, key, value):
     return False
 
 
+def check_string_not_present(text_intput, string_to_look_for):
+    for line in text_intput.split("\n"):
+        if string_to_look_for in line:
+            return False
+    return True
+
+
 def validate(output, config_to_check, confirmation_string):
     return analyse_output_key_value(output, config_to_check, confirmation_string)
 

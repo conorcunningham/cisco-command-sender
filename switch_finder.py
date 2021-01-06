@@ -76,7 +76,7 @@ def main():
     logger.debug(f"Starting switch scan at {startTime}")
     # open and read files, and handle errors if necessary
     try:
-        excel = ExcelProcessor(hosts_path, username, password, ignore_status=True)
+        excel = ExcelProcessor(hosts_path, "Sheet_name", username, password, ignore_status=True)
         hosts = excel.run_sheet_read()
         # with hosts_path.open() as file:
         #     hosts = sw.parse_hosts_file(file, username, password)

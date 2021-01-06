@@ -1,1 +1,3 @@
-show mac address-table
+int g0/1
+spanning-tree guard none
+do show spanning-tree interface g0/2 detail
