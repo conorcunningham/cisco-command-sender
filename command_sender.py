@@ -15,6 +15,7 @@ from src.excel_processor import ExcelProcessor
 parser = argparse.ArgumentParser()
 parser.add_argument("hosts_file", help="The hosts file containing switch IP/DNS entry")
 parser.add_argument("cmd_file", help="Commands to be sent to the switch. One per line")
+parser.add_argument("--sheet", help="The Excel sheet name to be processed. Default is Sheet 1")
 parser.add_argument("--username", help="Username for switch login")
 parser.add_argument("--password", help="Password for switch login")
 parser.add_argument("--log-file", help="Log file")
@@ -26,6 +27,8 @@ if not args.hosts_file or not args.cmd_file:
 
 username = args.username if args.username else None
 password = args.password if args.password else None
+sheet = args.sheet if args.sheet else "Sheet 1"
+print("Using default sheet name: Sheet 1")
 
 # Build the logger
 log_file = args.log_file if args.log_file else 'results.log'
@@ -61,7 +64,7 @@ check_does_not_contain = "Loop guard"
 def main():
     # open and read files, and handle errors if necessary
     try:
-        excel = ExcelProcessor(hosts_path, "test_sheet", username, password, ignore_status=True)
+        excel = ExcelProcessor(hosts_path, sheet, username, password, ignore_status=False)
         hosts = excel.run_sheet_read()
     except (FileExistsError, FileNotFoundError):
         logger.error(f"Hosts file {hosts_path.name} not found or failed to open")
@@ -88,8 +91,8 @@ def main():
     # loop over all hosts and execute necessary commands
     with concurrent.futures.ThreadPoolExecutor() as executor:
         for host in hosts:
-            run_ssh_connection(host, cmds, excel)
-            # executor.submit(run_ssh_connection, host, cmds)
+            # run_ssh_connection(host, cmds, excel)
+            executor.submit(run_ssh_connection, host, cmds)
 
     # save excel file to disk
     excel.append_df_to_excel(truncate_sheet=True, index=False, startrow=0)
