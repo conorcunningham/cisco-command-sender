@@ -91,8 +91,8 @@ def main():
     # loop over all hosts and execute necessary commands
     with concurrent.futures.ThreadPoolExecutor() as executor:
         for host in hosts:
-            run_ssh_connection(host, cmds, excel)
-            # executor.submit(run_ssh_connection, host, cmds)
+            # run_ssh_connection(host, cmds, excel)
+            executor.submit(run_ssh_connection, host, cmds, excel)
 
     # save excel file to disk
     excel.append_df_to_excel(truncate_sheet=True, index=False, startrow=0)
@@ -122,6 +122,8 @@ def run_ssh_connection(host, cmds, excel: ExcelProcessor):
             print(f"Successfully processed {host['host']}")
         else:
             excel.update_process_column(host["host"], False)
+            logger.debug(f"Failed to  process {host['host']}")
+            print(f"Failed to  process {host['host']}")
 
     except NetmikoAuthenticationException:
         logger.error(f"Auth error exception as {host['host']}")
