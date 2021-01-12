@@ -64,7 +64,7 @@ check_does_not_contain = "Loop guard"
 def main():
     # open and read files, and handle errors if necessary
     try:
-        excel = ExcelProcessor(hosts_path, sheet, username, password, ignore_status=False)
+        excel = ExcelProcessor(hosts_path, "batch 2", username, password, ignore_status=False)
         hosts = excel.run_sheet_read()
     except (FileExistsError, FileNotFoundError):
         logger.error(f"Hosts file {hosts_path.name} not found or failed to open")
