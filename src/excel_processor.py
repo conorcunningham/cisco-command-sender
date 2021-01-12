@@ -1,9 +1,28 @@
 import typing
+import logging
+import sys
 import pandas as pd
 from openpyxl import load_workbook
 # from collections import namedtuple
 #
 # Columns = namedtuple('column', 'hostname, ip, status')
+
+# Build the logger
+log_file = "results.log"
+file_handler = logging.FileHandler(log_file)
+stream_handler = logging.StreamHandler(sys.stdout)
+file_handler.setLevel(logging.DEBUG)
+stream_handler.setLevel(logging.ERROR)
+# formatting for loggers
+file_handler_format = logging.Formatter('%(levelname)s - %(asctime)s - %(message)s')
+stream_handler_format = logging.Formatter('%(levelname)s - %(asctime)s - %(message)s')
+file_handler.setFormatter(file_handler_format)
+stream_handler.setFormatter(stream_handler_format)
+
+logger = logging.getLogger(__name__)
+logger.addHandler(file_handler)
+logger.addHandler(stream_handler)
+logger.setLevel(logging.DEBUG)
 
 
 class Column(typing.NamedTuple):
@@ -28,11 +47,10 @@ class ExcelProcessor:
         # right method
         with pd.ExcelFile(self.spreadsheet) as xls:
             for sheet_name in xls.sheet_names:
-                print(sheet_name)
-            df = xls.parse(self.sheet)
-            # df.reset_index()
-            # df = pd.read_excel(xls, sheet_name=self.sheet)
-            print(df.head())
+                df = xls.parse(self.sheet)
+                # df.reset_index()
+                # df = pd.read_excel(xls, sheet_name=self.sheet)
+                # print(df.head())
         return df
 
     def run_sheet_read(self):
@@ -66,12 +84,12 @@ class ExcelProcessor:
     def update_process_column(self, key, result):
         status = "success" if result else "failed"
         row = self.data.loc[self.data["ip"] == key, "status"] = status
-        # self.write_to_file()
+        self.write_to_file()
         return row
 
     def update_sheet(self, key, value, column):
         row = self.data.loc[self.data["ip"] == key, column] = value
-        # self.write_to_file()
+        self.write_to_file()
         return row
 
     def update_ports_column(self, key, port_info):
@@ -80,12 +98,14 @@ class ExcelProcessor:
 
     def write_to_file(self, index=False):
         # self.data.to_excel(self.spreadsheet, index=index)
-        self.append_df_to_excel(index=False)
+        self.append_df_to_excel(index=index)
 
     def process_row(self, row):
         if self.ignore_status:
             return True
         if row.status == 'success':
+            print(f"ignoring row {row}")
+            logger.debug(f"ignoring row {row}")
             return False
         return True
 

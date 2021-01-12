@@ -28,7 +28,7 @@ if not args.hosts_file or not args.cmd_file:
 username = args.username if args.username else None
 password = args.password if args.password else None
 sheet = args.sheet if args.sheet else "Sheet 1"
-print("Using default sheet name: Sheet 1")
+print(f"Using default sheet name: {sheet}")
 
 # Build the logger
 log_file = args.log_file if args.log_file else 'results.log'
@@ -64,7 +64,7 @@ check_does_not_contain = "Loop guard"
 def main():
     # open and read files, and handle errors if necessary
     try:
-        excel = ExcelProcessor(hosts_path, "batch_2", username, password, ignore_status=False)
+        excel = ExcelProcessor(hosts_path, sheet, username, password, ignore_status=False)
         hosts = excel.run_sheet_read()
     except (FileExistsError, FileNotFoundError):
         logger.error(f"Hosts file {hosts_path.name} not found or failed to open")
@@ -91,8 +91,8 @@ def main():
     # loop over all hosts and execute necessary commands
     with concurrent.futures.ThreadPoolExecutor() as executor:
         for host in hosts:
-            # run_ssh_connection(host, cmds, excel)
-            executor.submit(run_ssh_connection, host, cmds)
+            run_ssh_connection(host, cmds, excel)
+            # executor.submit(run_ssh_connection, host, cmds)
 
     # save excel file to disk
     excel.append_df_to_excel(truncate_sheet=True, index=False, startrow=0)
@@ -118,6 +118,8 @@ def run_ssh_connection(host, cmds, excel: ExcelProcessor):
         # check output record result
         if check_string_not_present(output, check_does_not_contain):
             excel.update_process_column(host["host"], True)
+            logger.debug(f"Successfully processed {host['host']}")
+            print(f"Successfully processed {host['host']}")
         else:
             excel.update_process_column(host["host"], False)
 
